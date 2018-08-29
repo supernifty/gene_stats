@@ -8,7 +8,7 @@ import collections
 import logging
 import sys
 
-def main(allowed, padding):
+def main(allowed, padding, use_max):
   logging.info('starting...')
 
   #bin    name    chrom   strand  txStart txEnd   cdsStart        cdsEnd  exonCount       exonStarts      exonEnds        score   name2   cdsStartStat    cdsEndStat      exonFrames
@@ -30,19 +30,25 @@ def main(allowed, padding):
 
     if allowed is not None and gene not in allowed_set:
       continue
-    if gene in genes:
+
+    if not use_max and gene in genes:
       continue
 
+    transcript = 0
     for start, finish in zip(fields[9].split(','), fields[10].split(',')):
       if start == '' or finish == '':
         continue
       start = max(codingStart, int(start))
       finish = min(codingEnd, int(finish))
       if finish - start > 0:
-        genes[gene] += finish - start + padding * 2
+        transcript += finish - start + padding * 2
+    genes[gene] = max(genes[gene], transcript)
 
   for gene in sorted(genes):
     sys.stdout.write('{}\t{}\n'.format(gene, genes[gene]))
+
+  if allowed is not None:
+    sys.stderr.write('Missing genes: {}\n'.format(' '.join(list(allowed_set.difference(set(genes.keys()))))))
 
   logging.info('done')
 
@@ -50,6 +56,7 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Count coding sequence')
   parser.add_argument('--genes', nargs='+', help='gene filter')
   parser.add_argument('--padding', default=0, type=int, help='exon padding')
+  parser.add_argument('--max', action='store_true', help='max transcript size')
   parser.add_argument('--verbose', action='store_true', help='more logging')
   args = parser.parse_args()
   if args.verbose:
@@ -57,4 +64,4 @@ if __name__ == '__main__':
   else:
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
 
-  main(args.genes, args.padding)
+  main(args.genes, args.padding, args.max)
