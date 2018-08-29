@@ -44,11 +44,15 @@ def main(allowed, padding, use_max):
         transcript += finish - start + padding * 2
     genes[gene] = max(genes[gene], transcript)
 
-  for gene in sorted(genes):
-    sys.stdout.write('{}\t{}\n'.format(gene, genes[gene]))
-
-  if allowed is not None:
-    sys.stderr.write('Missing genes: {}\n'.format(' '.join(list(allowed_set.difference(set(genes.keys()))))))
+  if allowed is None:
+    for gene in sorted(genes):
+      sys.stdout.write('{}\t{}\n'.format(gene, genes[gene]))
+  else:
+    for gene in allowed:
+      if gene in genes:
+        sys.stdout.write('{}\t{}\n'.format(gene, genes[gene]))
+      else:
+        sys.stdout.write('{}\t{}\n'.format(gene, 'MISSING'))
 
   logging.info('done')
 
